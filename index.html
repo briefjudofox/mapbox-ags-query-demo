@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+  <script src='http://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.js'></script>
+  <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js'></script>
+  <link href='http://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.css' rel='stylesheet' />
+  <!--[if lte IE 8]>
+    <link href='http://api.tiles.mapbox.com/mapbox.js/v1.3.1/mapbox.ie.css' rel='stylesheet' >
+  <![endif]-->
+  <style>
+    body { margin:0; padding:0; }
+    #map { position:absolute; top:0; bottom:0; width:100%; }
+  </style>
+</head>
+<body>
+<div id='map'></div>
+<script type='text/javascript'>
+var map = L.mapbox.map('map', 'briefjudofox.map-xgu6ijjz').setView([37.6681, -121.9476], 10);
+var marker = L.marker(new L.LatLng(37.6681,-121.9476), {
+                icon: L.mapbox.marker.icon({'marker-color': 'CC0033'}),
+                draggable: true
+            });
+marker.bindPopup('<h1>Drag and Drop this marker on a Block Group to see some old Census data from 2000!</h1>');
+marker.addTo(map).on('dragend', function onDragged(e) {
+			$.ajax({
+				url: 'http://sampleserver6.arcgisonline.com/arcgis/rest/services/Census/MapServer/1/query',
+				dataType: 'json',
+				data: {geometry:this.getLatLng().lng + ',' + this.getLatLng().lat,
+					geometryType:'esriGeometryPoint',
+					spatialRel:'esriSpatialRelWithin',
+					outFields:'FIPS,AGE_5_17,AGE_18_21,AGE_22_29,AGE_30_39,AGE_40_49,AGE_50_64,AGE_65_UP,MED_AGE,MED_AGE_M,MED_AGE_F,POP2000',
+					returnGeometry:'false',
+					returnIdsOnly:'false',
+					returnCountOnly:'false',
+					returnZ:'false',
+					returnM:'false',
+					returnDistinctValues:'false',
+					f:'json'},
+				success: function load(result) {
+					var popupHtml;
+					if(!result || !result.features || result.features.length < 1){
+						popupHtml = '<h1>Sorry, no block group here. Try dragging me on to U.S land.</h1>';
+					}else{
+						totalPop = result.features[0].attributes.POP2000;
+						popupHtml = '<h1>Population</h1>';
+						popupHtml += '<h4>';
+						popupHtml += 'Total in 2000: ' + totalPop + '<br>';
+						popupHtml += 'Age 5 to 17: ' + result.features[0].attributes.AGE_5_17+ ' ('+((result.features[0].attributes.AGE_5_17 / totalPop)*100).toFixed(2) +'%)<br>';
+						popupHtml += 'Age 18 to 21: ' + result.features[0].attributes.AGE_18_21+ ' ('+((result.features[0].attributes.AGE_18_21 / totalPop)*100).toFixed(2) +'%)<br>';
+						popupHtml += 'Age 22 to 29: ' + result.features[0].attributes.AGE_22_29+ ' ('+((result.features[0].attributes.AGE_22_29 / totalPop)*100).toFixed(2) +'%)<br>';
+						popupHtml += 'Age 30 to 39: ' + result.features[0].attributes.AGE_30_39+ ' ('+((result.features[0].attributes.AGE_30_39 / totalPop)*100).toFixed(2) +'%)<br>';
+						popupHtml += 'Age 40 to 49: ' + result.features[0].attributes.AGE_40_49+ ' ('+((result.features[0].attributes.AGE_40_49 / totalPop)*100).toFixed(2) +'%)<br>';
+						popupHtml += 'Age 50 to 64: ' + result.features[0].attributes.AGE_50_64+ ' ('+((result.features[0].attributes.AGE_50_64 / totalPop)*100).toFixed(2) +'%)<br>';
+						popupHtml += 'Age 65 and Up: ' + result.features[0].attributes.AGE_65_UP+ ' ('+((result.features[0].attributes.AGE_65_UP / totalPop)*100).toFixed(2) +'%)<br>';
+						popupHtml += 'Median Age: ' + result.features[0].attributes.MED_AGE+ '<br>';
+						popupHtml += 'Medial Male Age: ' + result.features[0].attributes.MED_AGE_M+ '<br>';
+						popupHtml += 'Median Female Age: ' + result.features[0].attributes.MED_AGE_F+ '<br>';
+						popupHtml += '</h4>';
+						popupHtml += '<h5><i>Block Group ID: ' + result.features[0].attributes.FIPS + '</i></h5>';
+					}
+					marker.bindPopup(popupHtml).openPopup();
+
+
+				}
+			});
+        }).openPopup();
+</script>
+</body>
+</html>
